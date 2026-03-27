@@ -15,7 +15,7 @@ cp ../../.env.example ../../.env
 
 # Edit .env and add your API keys:
 # - MASTER_DATABASE_URL (PostgreSQL connection string)
-# - GOOGLE_MAPS_API_KEY (from Google Cloud Console)
+# - HASDATA_API_KEY (from HasData)
 # - OPENAI_API_KEY (from OpenAI Platform)
 ```
 
@@ -29,34 +29,30 @@ Expected output:
 🚀 Starting Research Agent
    Job ID: 123e4567-e89b-12d3-a456-426614174000
    Query: coffee shops in Seattle WA
-   Lead Count: 5
-
 🔍 Research Agent started for job 123e4567-e89b-12d3-a456-426614174000
 📝 Query: coffee shops in Seattle WA
 
-🌍 Searching for 5 leads...
-✅ Found 5 leads
+🌍 Searching for 10 leads...
+✅ Found 10 leads
 
 🧠 Enriching leads with OpenAI...
-  [1/5] Enriching Starbucks Reserve Roastery...
-  [2/5] Enriching Victrola Coffee Roasters...
-  [3/5] Enriching Espresso Vivace...
-  [4/5] Enriching Caffe Vita...
-  [5/5] Enriching Elm Coffee Roasters...
-✅ Enriched 5 leads
+  [1/10] Enriching Starbucks Reserve Roastery...
+  [2/10] Enriching Victrola Coffee Roasters...
+  ...
+✅ Enriched 10 leads
 
 💾 Saving leads to Ghost DB...
-✅ Saved 5 leads to job DB
+✅ Saved 10 leads to job DB
 
 📊 Updating job status...
 ✅ Updated job status to RESEARCH_COMPLETE
 
 ✅ Research Agent completed successfully!
-📈 Summary: 5 leads researched and saved
+📈 Summary: 10 leads researched and saved
 
 ✅ Success!
    Status: success
-   Leads Found: 5
+   Leads Found: 10
    Job ID: 123e4567-e89b-12d3-a456-426614174000
 
 💡 To view the leads, run:
@@ -112,9 +108,9 @@ lead_count = 25
 
 ## 🔧 Troubleshooting
 
-### "GOOGLE_MAPS_API_KEY not set"
-→ Add your Google Maps API key to `.env`
-→ Enable Places API in Google Cloud Console
+### "HASDATA_API_KEY not set"
+→ Add your HasData API key to `.env`
+→ See HasData dashboard for key creation and quotas
 
 ### "OPENAI_API_KEY not set"
 → Add your OpenAI API key to `.env`
@@ -126,8 +122,8 @@ lead_count = 25
 
 ### "No leads found"
 → Try a more specific query
-→ Check Google Maps API quota
-→ Verify API key has correct permissions
+→ Check HasData API quota and response payload
+→ Verify `HASDATA_API_KEY` is valid
 
 ## 📊 What You Get
 
@@ -138,7 +134,7 @@ For each lead, the agent provides:
 - **Email**: Extracted from website (if available)
 - **Address**: Full business address
 - **Website**: Business website URL
-- **Rating**: Google Maps rating (1-5 stars)
+- **Rating**: Maps-backed rating (1-5 stars) from search results
 - **Research Summary**: 2-3 sentence AI-generated summary including:
   - Services offered
   - Business signals (size, professionalism)
@@ -146,15 +142,14 @@ For each lead, the agent provides:
 
 ## 💰 Cost Estimate
 
-Per lead:
-- Google Maps API: $0.017
-- OpenAI API: $0.001
-- **Total: ~$0.018 per lead**
+Per lead (approximate):
+- HasData API: order of ~$0.002 (see HasData pricing)
+- OpenAI API: ~$0.001
+- **Total: varies with providers and volume**
 
 Examples:
-- 10 leads: ~$0.18
-- 100 leads: ~$1.80
-- 1,000 leads: ~$18.00
+- 10 leads: small dollar amounts at typical HasData + OpenAI usage
+- Scale: re-estimate from current provider pricing pages
 
 ## ⚡ Performance
 

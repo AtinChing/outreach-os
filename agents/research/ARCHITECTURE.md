@@ -12,15 +12,12 @@
 │  │                    SEARCH PHASE                          │  │
 │  │                                                          │  │
 │  │  ┌────────────────────────────────────────────────┐     │  │
-│  │  │  Google Maps Places API                        │     │  │
-│  │  │  - Text Search: "plumbing in Austin TX"        │     │  │
-│  │  │  - Returns: place_id, name, rating             │     │  │
-│  │  └────────────────────────────────────────────────┘     │  │
-│  │                        ↓                                 │  │
-│  │  ┌────────────────────────────────────────────────┐     │  │
-│  │  │  Google Maps Place Details API                 │     │  │
-│  │  │  - Input: place_id                             │     │  │
-│  │  │  - Returns: phone, address, website            │     │  │
+│  │  │  HasData API (Google Maps search scrape)       │     │  │
+│  │  │  - GET /scrape/google-maps/search?q=...        │     │  │
+│  │  │  - Header: x-api-key (HASDATA_API_KEY)         │     │  │
+│  │  │  - Returns: businesses with name, phone,       │     │  │
+│  │  │    address, website, rating                    │     │  │
+│  │  │  - Skips permanently/temporarily closed        │     │  │
 │  │  └────────────────────────────────────────────────┘     │  │
 │  │                        ↓                                 │  │
 │  │  Result: List[{name, phone, address, website, rating}]  │  │

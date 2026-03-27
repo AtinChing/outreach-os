@@ -13,8 +13,8 @@ The Research Agent is the first step in the lead generation pipeline. It discove
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐ │
 │  │   search.py  │───▶│  enrich.py   │───▶│  writer.py   │ │
 │  │              │    │              │    │              │ │
-│  │ Google Maps  │    │   OpenAI     │    │  Ghost DB    │ │
-│  │ Places API   │    │   Analysis   │    │  (asyncpg)   │ │
+│  │   HasData    │    │   OpenAI     │    │  Ghost DB    │ │
+│  │  Maps search │    │   Analysis   │    │  (asyncpg)   │ │
 │  └──────────────┘    └──────────────┘    └──────────────┘ │
 │                                                             │
 │  Output: RESEARCH_COMPLETE status + leads in Ghost DB      │
@@ -23,10 +23,10 @@ The Research Agent is the first step in the lead generation pipeline. It discove
 
 ## Flow
 
-1. **Search** (`search.py`): Calls Google Maps Places API to find businesses
-   - Text search with query
-   - Place Details API for phone, website, rating
-   - Filters out permanently closed businesses
+1. **Search** (`search.py`): Calls the HasData Google Maps search API to find businesses
+   - Text search with query (`q`)
+   - Returns name, phone, address, website, rating in one response
+   - Filters out permanently or temporarily closed businesses
 
 2. **Enrich** (`enrich.py`): Uses OpenAI to analyze each lead
    - Scrapes website content
@@ -44,7 +44,7 @@ Required in `.env`:
 
 ```bash
 MASTER_DATABASE_URL=postgresql://ghost:***@<db>.ghost.build/postgres
-GOOGLE_MAPS_API_KEY=AIza...
+HASDATA_API_KEY=...
 OPENAI_API_KEY=sk-...
 ```
 
@@ -111,24 +111,24 @@ CREATE TABLE leads (
 
 ## Error Handling
 
-- If Google Maps API fails: raises `ValueError`
+- If HasData API fails: raises `ValueError`
 - If OpenAI API fails: raises exception, lead gets partial data
 - If DB write fails: raises exception, job status set to `FAILED`
 - All errors propagate to Orchestrator for retry logic
 
 ## Performance
 
-- Google Maps API: ~500ms per lead (2 API calls each)
+- HasData search: typically batches results in one request (~1-3s for the search step)
 - OpenAI enrichment: ~2-3s per lead
 - Website scraping: ~1-2s per lead
-- Total: ~4-6s per lead
-- 10 leads: ~40-60s end-to-end
+- Total: ~4-6s per lead (dominated by enrichment and scraping)
+- 10 leads: on the order of tens of seconds end-to-end (sequential enrichment)
 
 ## Cost Estimates
 
-- Google Maps API: $0.017 per lead (Text Search + Place Details)
+- HasData API: refer to current HasData pricing (order of ~$0.002 per lead for many queries)
 - OpenAI API: ~$0.001 per lead (300 tokens output)
-- Total: ~$0.018 per lead
+- Total: varies with HasData + OpenAI usage
 
 ## Testing
 

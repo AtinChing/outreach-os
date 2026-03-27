@@ -2,20 +2,19 @@
 
 ## What Was Built
 
-A complete, production-ready Research Agent that discovers and enriches leads using Google Maps API and OpenAI, then persists them to Ghost DB (PostgreSQL).
+A complete, production-ready Research Agent that discovers and enriches leads using HasData (Google Maps search scrape) and OpenAI, then persists them to Ghost DB (PostgreSQL).
 
 ## Files Created/Modified
 
 ### Core Implementation
 1. **`agent.py`** - Main orchestration logic
-   - Entry point: `run_research_agent()`
+   - Entry point: `main(job_id, connection_string)`
    - Coordinates search → enrich → write pipeline
    - Error handling and status updates
    - CLI interface for testing
 
-2. **`search.py`** - Lead discovery via Google Maps API
-   - Text search for businesses
-   - Place Details API for contact info
+2. **`search.py`** - Lead discovery via HasData (Google Maps search scrape)
+   - HTTP GET with query and limit
    - Filters closed businesses
    - Returns: name, phone, address, website, rating
 
@@ -109,11 +108,10 @@ created_at TIMESTAMP
 
 ## Key Features
 
-### 1. Google Maps Integration
-- Text search for business discovery
-- Place Details API for enriched data
+### 1. HasData search integration
+- Google Maps-backed search results via HasData API
 - Automatic filtering of closed businesses
-- Rate limiting and error handling
+- Error handling for API failures
 
 ### 2. AI Enrichment
 - Website content extraction
@@ -142,27 +140,26 @@ created_at TIMESTAMP
 ## Performance Metrics
 
 ### Timing (per lead)
-- Google Maps API: ~500ms (2 API calls)
+- HasData search: batched (one request for many leads; typically a few seconds for the search step)
 - Website scraping: ~1-2s
 - OpenAI enrichment: ~2-3s
 - Database write: ~50ms
-- **Total: ~4-6s per lead**
+- **Total: ~4-6s per lead** (dominated by scraping + OpenAI when run sequentially)
 
 ### Throughput
 - 10 leads: ~40-60s (sequential)
 - 10 leads: ~15-20s (parallel enrichment)
 
 ### Cost (per lead)
-- Google Maps API: $0.017
+- HasData API: see provider pricing (often on the order of ~$0.002 per lead for comparable queries)
 - OpenAI API: ~$0.001
-- **Total: ~$0.018 per lead**
+- **Total: varies with providers and volume**
 
 ## API Keys Required
 
-1. **Google Maps API Key**
-   - Enable: Places API (New)
-   - Enable: Place Details API
-   - Cost: $0.017 per lead
+1. **HasData API Key (`HASDATA_API_KEY`)**
+   - Used by `search.py` for Google Maps search scrape
+   - Cost: see HasData pricing for your plan
 
 2. **OpenAI API Key**
    - Model: gpt-4o-mini
@@ -191,11 +188,10 @@ Expected output:
 
 ### Manual Test
 ```bash
+# Job row must exist in master DB with `query` set; then:
 python agent.py \
-  "$(uuidgen)" \
-  "coffee shops in Seattle" \
-  "$MASTER_DATABASE_URL" \
-  5
+  "<job-uuid>" \
+  "$JOB_CONNECTION_STRING"
 ```
 
 ## Deployment
@@ -217,7 +213,7 @@ QUERY=<search query>
 JOB_CONNECTION_STRING=<postgresql://...>
 LEAD_COUNT=10
 MASTER_DATABASE_URL=<postgresql://...>
-GOOGLE_MAPS_API_KEY=<key>
+HASDATA_API_KEY=<key>
 OPENAI_API_KEY=<key>
 ```
 
@@ -272,7 +268,7 @@ leads = await conn.fetch(
 ✅ All criteria met:
 
 1. **Functional**
-   - Discovers leads via Google Maps API
+   - Discovers leads via HasData
    - Enriches with OpenAI
    - Persists to Ghost DB
    - Updates job status
@@ -307,7 +303,7 @@ leads = await conn.fetch(
 
 The Research Agent is production-ready and fully implements the spec requirements:
 
-- ✅ Google Maps API integration via Airbyte pattern
+- ✅ HasData integration for lead discovery
 - ✅ OpenAI enrichment
 - ✅ Ghost DB (PostgreSQL) persistence
 - ✅ Job status tracking

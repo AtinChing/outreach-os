@@ -1,3 +1,7 @@
 .env
 .env.local
 *.env
+.vscode*
+__pycache__/
+*.pyc
+agents/research/__pycache__/

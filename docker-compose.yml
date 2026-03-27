@@ -1,4 +1,23 @@
 services:
+  # Local PostgreSQL database (Ghost DB replacement)
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ghost
+      POSTGRES_PASSWORD: ghostpass
+      POSTGRES_DB: master_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/master_schema.sql:/docker-entrypoint-initdb.d/1-master_schema.sql
+      - ./db/job_schema.sql:/docker-entrypoint-initdb.d/2-job_schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ghost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: .
@@ -8,6 +27,9 @@ services:
       - MASTER_DATABASE_URL=${MASTER_DATABASE_URL}
     ports:
       - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   research-agent:
     build:
@@ -16,3 +38,9 @@ services:
     env_file: .env
     environment:
       - MASTER_DATABASE_URL=${MASTER_DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

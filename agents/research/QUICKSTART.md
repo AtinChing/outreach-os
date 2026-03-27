@@ -6,7 +6,7 @@ Get the Research Agent running in 5 minutes.
 
 1. Python 3.11+
 2. Ghost DB (or any PostgreSQL database)
-3. Google Maps API key
+3. HasData API key
 4. OpenAI API key
 
 ## Setup
@@ -27,7 +27,7 @@ Create `.env` in project root:
 MASTER_DATABASE_URL=postgresql://user:pass@host:5432/dbname
 
 # API Keys
-GOOGLE_MAPS_API_KEY=AIzaSy...
+HASDATA_API_KEY=...
 OPENAI_API_KEY=sk-...
 ```
 
@@ -71,14 +71,14 @@ Expected output:
 🔍 Research Agent started for job 123e4567-e89b-12d3-a456-426614174000
 📝 Query: coffee shops in San Francisco CA
 
-🌍 Searching for 5 leads...
-✅ Found 5 leads
+🌍 Searching for 10 leads...
+✅ Found 10 leads
 
 🧠 Enriching leads with OpenAI...
-  [1/5] Enriching Blue Bottle Coffee...
-  [2/5] Enriching Sightglass Coffee...
+  [1/10] Enriching Blue Bottle Coffee...
+  [2/10] Enriching Sightglass Coffee...
   ...
-✅ Enriched 5 leads
+✅ Enriched 10 leads
 
 💾 Saving leads to Ghost DB...
 ✅ Saved 5 leads to job DB
@@ -87,14 +87,14 @@ Expected output:
 ✅ Updated job 123e4567-e89b-12d3-a456-426614174000 status to RESEARCH_COMPLETE
 
 ✅ Research Agent completed successfully!
-📈 Summary: 5 leads researched and saved
+📈 Summary: 10 leads researched and saved
 ============================================================
 
-   ✅ Agent completed: {'status': 'success', 'leads_count': 5, 'job_id': '...'}
+   ✅ Agent completed: {'status': 'success', 'leads_count': 10, 'job_id': '...'}
 
 4️⃣ Verifying results...
    Job status: RESEARCH_COMPLETE
-   Leads saved: 5
+   Leads saved: 10
 
    📄 Sample Lead:
       Name: Blue Bottle Coffee
@@ -115,23 +115,29 @@ Expected output:
 
 ## Manual Run
 
+The job must already exist in the master DB with `query` set (see `example.py` or `test_agent.py`). Then:
+
 ```bash
 python agent.py \
-  "$(uuidgen)" \
-  "plumbing in Austin TX" \
-  "$MASTER_DATABASE_URL" \
-  10
+  "<job-uuid-from-jobs-table>" \
+  "$MASTER_DATABASE_URL"
 ```
 
 ## Troubleshooting
 
-### Google Maps API Error
+### HasData API Error
 
 ```
-ValueError: Google Maps API error: REQUEST_DENIED
+ValueError: HASDATA_API_KEY not set
 ```
 
-**Solution**: Enable Places API in Google Cloud Console and check API key permissions.
+or
+
+```
+ValueError: HasData API error: ...
+```
+
+**Solution**: Set `HASDATA_API_KEY` in `.env` and confirm your HasData account and quota.
 
 ### OpenAI API Error
 
