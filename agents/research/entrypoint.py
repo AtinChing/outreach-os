@@ -12,7 +12,7 @@ Expects environment variables:
 import os
 import asyncio
 import sys
-from agent import run_research_agent
+from agent import main
 
 def main():
     # Read from environment
@@ -36,11 +36,9 @@ def main():
     
     # Run agent
     try:
-        result = asyncio.run(run_research_agent(
+        result = asyncio.run(main(
             job_id=job_id,
-            query=query,
-            job_connection_string=job_connection_string,
-            lead_count=lead_count
+            connection_string=job_connection_string
         ))
         
         print(f"\n✅ Research Agent completed successfully")

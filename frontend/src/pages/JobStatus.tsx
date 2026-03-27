@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
-import { getJob } from "../api/client";
+import { getJob, getLeads, Lead } from "../api/client";
+import JobCard from "../components/JobCard";
+import LeadsTable from "../components/LeadsTable";
 
 const TERMINAL_STATUSES = ["RESEARCH_COMPLETE", "FAILED"];
 
@@ -16,6 +18,7 @@ export default function JobStatus() {
   const { job_id } = useParams<{ job_id: string }>();
   const { getAccessTokenSilently } = useAuth0();
   const [job, setJob] = useState<JobData | null>(null);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -26,7 +29,12 @@ export default function JobStatus() {
         const token = await getAccessTokenSilently();
         const data = await getJob(job_id!, token);
         setJob(data);
-        if (TERMINAL_STATUSES.includes(data.status)) {
+        
+        if (data.status === "RESEARCH_COMPLETE") {
+          const leadsData = await getLeads(job_id!, token);
+          setLeads(leadsData);
+          clearInterval(intervalId);
+        } else if (TERMINAL_STATUSES.includes(data.status)) {
           clearInterval(intervalId);
         }
       } catch (err: any) {
@@ -38,7 +46,7 @@ export default function JobStatus() {
     fetchJob();
     intervalId = setInterval(fetchJob, 3000);
     return () => clearInterval(intervalId);
-  }, [job_id]);
+  }, [job_id, getAccessTokenSilently]);
 
   if (error) return <p style={{ color: "red" }}>{error}</p>;
   if (!job) return <p>Loading...</p>;
@@ -46,12 +54,17 @@ export default function JobStatus() {
   return (
     <div>
       <h1>Job Status</h1>
-      <p><strong>ID:</strong> {job.job_id}</p>
-      <p><strong>Query:</strong> {job.query}</p>
-      <p><strong>Status:</strong> {job.status}</p>
-      <p><strong>Created:</strong> {new Date(job.created_at).toLocaleString()}</p>
+      <JobCard 
+        job_id={job.job_id}
+        query={job.query}
+        status={job.status}
+        created_at={job.created_at}
+      />
       {job.status === "RESEARCH_COMPLETE" && (
-        <p style={{ color: "green" }}>Research complete.</p>
+        <>
+          <h2>Leads</h2>
+          <LeadsTable leads={leads} />
+        </>
       )}
       {job.status === "FAILED" && (
         <p style={{ color: "red" }}>Job failed.</p>

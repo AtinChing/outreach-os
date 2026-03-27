@@ -3,7 +3,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.auth import verify_token
-from db.client import get_master_pool
+from db.client import get_master_pool, get_job_pool
 from db import models
 from backend import orchestrator
 
@@ -52,3 +52,32 @@ async def get_job(
         raise HTTPException(status_code=404, detail="Job not found")
 
     return models.JobStatusResponse(**dict(row))
+
+
+@app.get("/jobs/{job_id}/leads", response_model=list[models.LeadsResponse])
+async def get_leads(
+    job_id: str,
+    token: dict = Depends(verify_token),
+):
+    pool = await get_master_pool()
+    async with pool.acquire() as conn:
+        job_row = await conn.fetchrow(
+            "SELECT db_connection_string FROM jobs WHERE job_id = $1",
+            job_id,
+        )
+
+    if not job_row:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    connection_string = job_row["db_connection_string"]
+    if not connection_string:
+        return []
+
+    job_pool = await get_job_pool(connection_string)
+    async with job_pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM leads WHERE job_id = $1",
+            job_id,
+        )
+
+    return [models.LeadsResponse(**dict(row)) for row in rows]

@@ -1,7 +1,7 @@
 import os
 import asyncio
 from dotenv import load_dotenv
-from agents.research import search, enrich, writer
+from . import search, enrich, writer
 from db.client import get_master_pool
 
 load_dotenv()

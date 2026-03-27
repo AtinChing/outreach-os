@@ -37,3 +37,16 @@ class JobStatusResponse(BaseModel):
     query: str
     status: str
     created_at: Optional[datetime] = None
+
+
+class LeadsResponse(BaseModel):
+    lead_id: UUID
+    job_id: UUID
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    address: Optional[str] = None
+    website: Optional[str] = None
+    research_summary: Optional[str] = None
+    status: Optional[str] = None
+    created_at: Optional[datetime] = None

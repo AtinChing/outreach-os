@@ -26,3 +26,24 @@ export async function getJob(
   if (!res.ok) throw new Error(`getJob failed: ${res.status}`);
   return res.json();
 }
+
+export interface Lead {
+  lead_id: string;
+  job_id: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  website: string | null;
+  research_summary: string | null;
+  status: string | null;
+  created_at: string | null;
+}
+
+export async function getLeads(jobId: string, token: string): Promise<Lead[]> {
+  const res = await fetch(`${API_BASE}/jobs/${jobId}/leads`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`getLeads failed: ${res.status}`);
+  return res.json();
+}
