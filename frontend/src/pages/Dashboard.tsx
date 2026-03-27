@@ -23,6 +23,11 @@ function getStageInfo(status: string): { title: string; description: string } {
         description:
           "The pipeline exited with an error. Use Show error logs for the captured traceback and subprocess output, or check the API server terminal.",
       };
+    case "FORKED":
+      return {
+        title: "Fork created",
+        description: "Ghost is copying the parent database; research will start on the fork shortly.",
+      };
     default:
       return {
         title: status,
@@ -34,6 +39,7 @@ function getStageInfo(status: string): { title: string; description: string } {
 function statusTagClass(status: string): string {
   if (status === "RESEARCH_COMPLETE") return "ibm-tag ibm-tag--done";
   if (status === "FAILED") return "ibm-tag ibm-tag--fail";
+  if (status === "FORKED") return "ibm-tag ibm-tag--active";
   return "ibm-tag ibm-tag--active";
 }
 
@@ -151,6 +157,9 @@ export default function Dashboard() {
           <h1 className="ibm-title">Lead research</h1>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+          <Link className="ibm-btn ibm-btn--ghost" to="/topology" style={{ textDecoration: "none" }}>
+            Ghost topology
+          </Link>
           {user?.email && (
             <span className="ibm-muted" style={{ fontSize: "0.75rem" }}>
               {user.email}

@@ -14,6 +14,8 @@ type JobData = {
   status: string;
   created_at: string;
   error_detail?: string | null;
+  provisioning_ms?: number | null;
+  research_completed_at?: string | null;
 };
 
 export default function JobStatus() {
@@ -89,7 +91,14 @@ export default function JobStatus() {
         </div>
       </header>
 
-      <JobCard job_id={job.job_id} query={job.query} status={job.status} created_at={job.created_at} />
+      <JobCard
+        job_id={job.job_id}
+        query={job.query}
+        status={job.status}
+        created_at={job.created_at}
+        provisioning_ms={job.provisioning_ms}
+        research_completed_at={job.research_completed_at}
+      />
 
       {job.status === "FAILED" && (
         <div className="ibm-panel" style={{ marginBottom: "1.5rem" }}>

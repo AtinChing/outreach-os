@@ -5,6 +5,7 @@
 import { Auth0Provider } from "@auth0/auth0-react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
+import GhostTopology from "./pages/GhostTopology";
 import JobStatus from "./pages/JobStatus";
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/topology" element={<GhostTopology />} />
           <Route path="/jobs/:job_id" element={<JobStatus />} />
         </Routes>
       </BrowserRouter>

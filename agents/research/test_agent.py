@@ -18,7 +18,7 @@ import asyncpg
 import uuid
 import os
 from dotenv import load_dotenv
-from agent import run_research_agent
+from agent import main as run_research_main
 
 load_dotenv()
 
@@ -90,12 +90,7 @@ async def test_research_agent():
     print("3️⃣ Running Research Agent...\n")
     print("=" * 60)
     try:
-        result = await run_research_agent(
-            job_id=job_id,
-            query=test_query,
-            job_connection_string=job_db_url,
-            lead_count=5
-        )
+        result = await run_research_main(job_id, job_db_url)
         print("=" * 60)
         print(f"\n   ✅ Agent completed: {result}\n")
     except Exception as e:

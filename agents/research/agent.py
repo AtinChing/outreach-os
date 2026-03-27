@@ -66,7 +66,13 @@ async def main(job_id: str, connection_string: str):
         print(f"\n📊 Updating job status...")
         async with pool.acquire() as conn:
             await conn.execute(
-                "UPDATE jobs SET status = $1, error_detail = NULL WHERE job_id = $2",
+                """
+                UPDATE jobs
+                SET status = $1,
+                    error_detail = NULL,
+                    research_completed_at = NOW()
+                WHERE job_id = $2
+                """,
                 "RESEARCH_COMPLETE",
                 job_id,
             )

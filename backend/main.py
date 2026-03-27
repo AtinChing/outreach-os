@@ -1,11 +1,13 @@
 import asyncio
-from fastapi import FastAPI, Depends, HTTPException
+
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.auth import verify_token
-from db.client import get_master_pool, get_job_pool
-from db import models
 from backend import orchestrator
+from backend.auth import verify_token
+from backend.topology import build_topology_response
+from db import models
+from db.client import get_job_pool, get_master_pool
 
 app = FastAPI()
 
@@ -16,6 +18,12 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=True,
 )
+
+_JOB_SELECT = """
+    SELECT job_id, query, status, created_at, error_detail,
+           parent_job_id, ghost_db_id, provisioning_ms, research_completed_at
+    FROM jobs
+"""
 
 
 @app.post("/jobs")
@@ -31,7 +39,7 @@ async def create_job(
         )
 
     job_id = row["job_id"]
-    asyncio.create_task(orchestrator.trigger_research(job_id))
+    asyncio.create_task(orchestrator.trigger_research(str(job_id)))
 
     return {"job_id": job_id, "status": row["status"], "created_at": row["created_at"]}
 
@@ -40,9 +48,7 @@ async def create_job(
 async def list_jobs(token: dict = Depends(verify_token)):
     pool = await get_master_pool()
     async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT job_id, query, status, created_at, error_detail FROM jobs ORDER BY created_at DESC NULLS LAST"
-        )
+        rows = await conn.fetch(f"{_JOB_SELECT} ORDER BY created_at DESC NULLS LAST")
     return [models.JobStatusResponse(**dict(row)) for row in rows]
 
 
@@ -54,7 +60,7 @@ async def get_job(
     pool = await get_master_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT job_id, query, status, created_at, error_detail FROM jobs WHERE job_id = $1",
+            f"{_JOB_SELECT} WHERE job_id = $1",
             job_id,
         )
 
@@ -62,6 +68,96 @@ async def get_job(
         raise HTTPException(status_code=404, detail="Job not found")
 
     return models.JobStatusResponse(**dict(row))
+
+
+@app.post("/jobs/{job_id}/fork", response_model=models.ForkJobResponse)
+async def fork_job(
+    job_id: str,
+    token: dict = Depends(verify_token),
+):
+    pool = await get_master_pool()
+    async with pool.acquire() as conn:
+        parent = await conn.fetchrow(
+            "SELECT job_id, query, ghost_db_id, status FROM jobs WHERE job_id = $1",
+            job_id,
+        )
+
+        if not parent:
+            raise HTTPException(status_code=404, detail="Job not found")
+
+        if not parent["ghost_db_id"]:
+            raise HTTPException(
+                status_code=400,
+                detail="This job has no Ghost database id (created before fork support). Run db/migrations/002_ghost_fork_topology.sql and create a new job.",
+            )
+
+        if parent["status"] != "RESEARCH_COMPLETE":
+            raise HTTPException(
+                status_code=400,
+                detail="Fork is only available after research completes on the parent job.",
+            )
+
+        row = await conn.fetchrow(
+            """
+            INSERT INTO jobs (query, status, parent_job_id)
+            VALUES ($1, 'FORKED', $2)
+            RETURNING job_id, status, created_at
+            """,
+            parent["query"],
+            parent["job_id"],
+        )
+
+    new_job_id = str(row["job_id"])
+
+    try:
+        connection_string, ghost_id, provisioning_ms = await orchestrator.fork_job_database(
+            parent_job_id=job_id,
+            new_job_id=new_job_id,
+            parent_query=parent["query"],
+            parent_ghost_db_id=parent["ghost_db_id"],
+        )
+    except Exception as exc:
+        pool = await get_master_pool()
+        async with pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE jobs SET status = 'FAILED', error_detail = $2 WHERE job_id = $1",
+                new_job_id,
+                str(exc),
+            )
+        raise HTTPException(status_code=502, detail=f"Ghost fork failed: {exc}") from exc
+
+    pool = await get_master_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            UPDATE jobs
+            SET db_connection_string = $1,
+                ghost_db_id = $2,
+                provisioning_ms = $3
+            WHERE job_id = $4
+            """,
+            connection_string,
+            ghost_id,
+            provisioning_ms,
+            new_job_id,
+        )
+
+    asyncio.create_task(
+        orchestrator.trigger_research_on_forked_db(new_job_id, connection_string)
+    )
+
+    return models.ForkJobResponse(
+        job_id=row["job_id"],
+        parent_job_id=parent["job_id"],
+        status=row["status"],
+        created_at=row["created_at"],
+    )
+
+
+@app.get("/topology", response_model=models.TopologyResponse)
+async def get_topology(token: dict = Depends(verify_token)):
+    pool = await get_master_pool()
+    return await build_topology_response(pool)
 
 
 @app.get("/jobs/{job_id}/leads", response_model=list[models.LeadsResponse])
