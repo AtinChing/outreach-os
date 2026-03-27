@@ -1,4 +1,6 @@
 httpx
-openai
+anthropic
 asyncpg
 python-dotenv
+beautifulsoup4
+aiohttp

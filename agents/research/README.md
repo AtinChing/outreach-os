@@ -1,0 +1,146 @@
+# Research Agent
+
+The Research Agent is the first step in the lead generation pipeline. It discovers, enriches, and persists leads to Ghost DB.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    RESEARCH AGENT                           │
+│                                                             │
+│  Input: job_id, query, job_connection_string               │
+│                                                             │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐ │
+│  │   search.py  │───▶│  enrich.py   │───▶│  writer.py   │ │
+│  │              │    │              │    │              │ │
+│  │ Google Maps  │    │   Claude     │    │  Ghost DB    │ │
+│  │ Places API   │    │   Analysis   │    │  (asyncpg)   │ │
+│  └──────────────┘    └──────────────┘    └──────────────┘ │
+│                                                             │
+│  Output: RESEARCH_COMPLETE status + leads in Ghost DB      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Flow
+
+1. **Search** (`search.py`): Calls Google Maps Places API to find businesses
+   - Text search with query
+   - Place Details API for phone, website, rating
+   - Filters out permanently closed businesses
+
+2. **Enrich** (`enrich.py`): Uses Claude to analyze each lead
+   - Scrapes website content
+   - Generates 2-3 sentence research summary
+   - Extracts email from website if available
+   - Identifies business signals and pain points
+
+3. **Write** (`writer.py`): Persists to Ghost DB
+   - Inserts leads into job-specific DB
+   - Updates master job status to `RESEARCH_COMPLETE`
+
+## Environment Variables
+
+Required in `.env`:
+
+```bash
+MASTER_DATABASE_URL=postgresql://ghost:***@<db>.ghost.build/postgres
+GOOGLE_MAPS_API_KEY=AIza...
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+## Installation
+
+```bash
+cd agents/research
+pip install -r requirements.txt
+```
+
+## Usage
+
+### As a TrueFoundry Job
+
+The Orchestrator will invoke this agent with:
+
+```python
+from agents.research.agent import run_research_agent
+
+result = await run_research_agent(
+    job_id="123e4567-e89b-12d3-a456-426614174000",
+    query="plumbing leads in Austin TX",
+    job_connection_string="postgresql://ghost:***@job-db.ghost.build/postgres",
+    lead_count=10
+)
+```
+
+### CLI Testing
+
+```bash
+python agent.py \
+  "123e4567-e89b-12d3-a456-426614174000" \
+  "plumbing in Austin TX" \
+  "postgresql://ghost:***@job-db.ghost.build/postgres" \
+  10
+```
+
+## Database Schema
+
+### Master DB (`jobs` table)
+
+```sql
+CREATE TABLE jobs (
+    job_id UUID PRIMARY KEY,
+    query TEXT NOT NULL,
+    status TEXT NOT NULL,  -- INITIATED → RESEARCH_COMPLETE
+    db_connection_string TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Job DB (`leads` table)
+
+```sql
+CREATE TABLE leads (
+    lead_id UUID PRIMARY KEY,
+    job_id UUID NOT NULL,
+    name TEXT,
+    phone TEXT,
+    email TEXT,
+    address TEXT,
+    website TEXT,
+    research_summary TEXT,
+    status TEXT DEFAULT 'RESEARCHED',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+## Error Handling
+
+- If Google Maps API fails: raises `ValueError`
+- If Claude API fails: raises exception, lead gets partial data
+- If DB write fails: raises exception, job status set to `RESEARCH_FAILED`
+- All errors propagate to Orchestrator for retry logic
+
+## Performance
+
+- Google Maps API: ~500ms per lead (2 API calls each)
+- Claude enrichment: ~2-3s per lead
+- Website scraping: ~1-2s per lead
+- Total: ~4-6s per lead
+- 10 leads: ~40-60s end-to-end
+
+## Cost Estimates
+
+- Google Maps API: $0.017 per lead (Text Search + Place Details)
+- Claude API: ~$0.001 per lead (300 tokens output)
+- Total: ~$0.018 per lead
+
+## Testing
+
+See `test_agent.py` for integration tests.
+
+## Next Steps
+
+After Research Agent completes:
+1. Orchestrator triggers Strategy Agent
+2. Strategy Agent reads leads from job DB
+3. Strategy Agent generates call scripts + email templates
