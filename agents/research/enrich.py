@@ -1,6 +1,6 @@
 import os
 import httpx
-from anthropic import AsyncAnthropic
+from google import genai
 from typing import Dict, Optional
 from bs4 import BeautifulSoup
 
@@ -26,12 +26,12 @@ async def enrich_lead(lead: Dict) -> Dict:
     # Scrape website content
     website_text = await scrape_website(website)
     
-    # Use Claude to analyze and summarize
-    anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not anthropic_api_key:
-        raise ValueError("ANTHROPIC_API_KEY not set")
+    # Use Gemini Flash to analyze and summarize
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    if not gemini_api_key:
+        raise ValueError("GEMINI_API_KEY not set")
     
-    client = AsyncAnthropic(api_key=anthropic_api_key)
+    client = genai.Client(api_key=gemini_api_key)
     
     prompt = f"""Analyze this business website and provide a concise research summary (2-3 sentences max).
 
@@ -50,13 +50,11 @@ Focus on:
 
 Keep it brief and actionable."""
 
-    response = await client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=300,
-        messages=[{"role": "user", "content": prompt}]
+    response = client.models.generate_content(
+        model='gemini-3-flash-preview',
+        contents=prompt
     )
-    
-    research_summary = response.content[0].text
+    research_summary = response.text
     lead["research_summary"] = research_summary
     
     # Try to extract email from website text

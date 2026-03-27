@@ -16,7 +16,7 @@ cp ../../.env.example ../../.env
 # Edit .env and add your API keys:
 # - MASTER_DATABASE_URL (PostgreSQL connection string)
 # - GOOGLE_MAPS_API_KEY (from Google Cloud Console)
-# - ANTHROPIC_API_KEY (from Anthropic Console)
+# - GEMINI_API_KEY (from Google AI Studio - FREE!)
 ```
 
 ### 3. Run Example
@@ -112,13 +112,15 @@ lead_count = 25
 
 ## 🔧 Troubleshooting
 
-### "GOOGLE_MAPS_API_KEY not set"
-→ Add your Google Maps API key to `.env`
-→ Enable Places API in Google Cloud Console
+### "HASDATA_API_KEY not set"
+→ Add your HasData API key to `.env`
+→ Get FREE account at https://hasdata.com/sign-up
+→ See `HASDATA_SETUP.md` for detailed instructions
 
-### "ANTHROPIC_API_KEY not set"
-→ Add your Anthropic API key to `.env`
-→ Get key from https://console.anthropic.com
+### "GEMINI_API_KEY not set"
+→ Add your Gemini API key to `.env`
+→ Get FREE key from https://aistudio.google.com/app/apikey
+→ See `GEMINI_SETUP.md` for detailed instructions
 
 ### "MASTER_DATABASE_URL not set"
 → Add your PostgreSQL connection string to `.env`
@@ -147,14 +149,16 @@ For each lead, the agent provides:
 ## 💰 Cost Estimate
 
 Per lead:
-- Google Maps API: $0.017
-- Claude API: $0.001
-- **Total: ~$0.018 per lead**
+- HasData (Google Maps API): $0.002
+- Gemini API: FREE
+- **Total: ~$0.002 per lead**
 
 Examples:
-- 10 leads: ~$0.18
-- 100 leads: ~$1.80
-- 1,000 leads: ~$18.00
+- 10 leads: ~$0.02
+- 100 leads: ~$0.21
+- 1,000 leads: ~$2.10 (or FREE with 1,000 credits!)
+
+**Free tier**: 1,000 HasData credits = 200 leads FREE!
 
 ## ⚡ Performance
 

@@ -11,8 +11,8 @@ import os
 from dotenv import load_dotenv
 from agent import run_research_agent
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from project root
+load_dotenv(dotenv_path="../../.env")
 
 async def example_usage():
     """

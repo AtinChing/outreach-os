@@ -1,6 +1,18 @@
 FROM python:3.11-slim
+
 WORKDIR /app
-COPY agents/research/requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-CMD ["python", "-m", "agents.research.agent"]
+
+# Install dependencies
+COPY agents/research/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy agent code
+COPY agents/research/ ./agents/research/
+COPY db/ ./db/
+
+# Set Python path
+ENV PYTHONPATH=/app
+
+# Run entrypoint
+WORKDIR /app/agents/research
+CMD ["python", "entrypoint.py"]

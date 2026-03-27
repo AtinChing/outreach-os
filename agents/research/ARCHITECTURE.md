@@ -38,11 +38,12 @@
 │  │  └────────────────────────────────────────────────┘     │  │
 │  │                        ↓                                 │  │
 │  │  ┌────────────────────────────────────────────────┐     │  │
-│  │  │  Claude API (Anthropic)                        │     │  │
-│  │  │  - Model: claude-3-5-sonnet-20241022           │     │  │
-│  │  │  - Input: business info + website text         │     │  │
-│  │  │  - Output: 2-3 sentence summary                │     │  │
-│  │  │  - Focus: services, signals, pain points       │     │  │
+│  │  │  Gemini API (Google)                       │     │  │
+│  │  │  - Model: gemini-1.5-flash                 │     │  │
+│  │  │  - Input: business info + website text     │     │  │
+│  │  │  - Output: 2-3 sentence summary            │     │  │
+│  │  │  - Focus: services, signals, pain points   │     │  │
+│  │  │  - Cost: FREE                              │     │  │
 │  │  └────────────────────────────────────────────────┘     │  │
 │  │                        ↓                                 │  │
 │  │  ┌────────────────────────────────────────────────┐     │  │
@@ -412,6 +413,6 @@ CREATE INDEX idx_leads_status ON leads(status);
 5. **Queue-based**: Process leads asynchronously
 
 ### Cost at Scale
-- 1,000 leads/day: ~$18/day
-- 10,000 leads/day: ~$180/day
-- 100,000 leads/day: ~$1,800/day
+- 1,000 leads/day: ~$17/day (FREE AI!)
+- 10,000 leads/day: ~$170/day (FREE AI!)
+- 100,000 leads/day: ~$1,700/day (FREE AI!)

@@ -28,7 +28,7 @@ MASTER_DATABASE_URL=postgresql://user:pass@host:5432/dbname
 
 # API Keys
 GOOGLE_MAPS_API_KEY=AIzaSy...
-ANTHROPIC_API_KEY=sk-ant-api03-...
+GEMINI_API_KEY=AIzaSy...  # Free tier available!
 ```
 
 ### 3. Initialize Database
@@ -140,6 +140,17 @@ anthropic.AuthenticationError: Invalid API key
 ```
 
 **Solution**: Verify `ANTHROPIC_API_KEY` in `.env` starts with `sk-ant-api03-`.
+
+### Gemini API Error
+
+```
+google.api_core.exceptions.PermissionDenied: API key not valid
+```
+
+**Solution**: 
+- Verify `GEMINI_API_KEY` in `.env` starts with `AIza`
+- Enable Generative Language API in Google Cloud Console
+- See `GEMINI_SETUP.md` for detailed setup
 
 ### Database Connection Error
 

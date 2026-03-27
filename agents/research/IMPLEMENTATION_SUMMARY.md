@@ -117,7 +117,7 @@ created_at TIMESTAMP
 
 ### 2. AI Enrichment
 - Website content extraction
-- Claude-powered business analysis
+- Gemini Flash-powered business analysis
 - Email extraction from websites
 - Business signals and pain point identification
 
@@ -154,8 +154,8 @@ created_at TIMESTAMP
 
 ### Cost (per lead)
 - Google Maps API: $0.017
-- Claude API: ~$0.001
-- **Total: ~$0.018 per lead**
+- Gemini API: FREE
+- **Total: ~$0.017 per lead**
 
 ## API Keys Required
 
@@ -164,9 +164,10 @@ created_at TIMESTAMP
    - Enable: Place Details API
    - Cost: $0.017 per lead
 
-2. **Anthropic API Key**
-   - Model: claude-3-5-sonnet-20241022
-   - Cost: ~$0.001 per lead
+2. **Gemini API Key**
+   - Model: gemini-1.5-flash
+   - Cost: FREE (with generous quota)
+   - Get key: https://aistudio.google.com/app/apikey
 
 3. **Ghost DB Connection String**
    - PostgreSQL-compatible

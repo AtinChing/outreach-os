@@ -28,7 +28,7 @@ The Research Agent is the first step in the lead generation pipeline. It discove
    - Place Details API for phone, website, rating
    - Filters out permanently closed businesses
 
-2. **Enrich** (`enrich.py`): Uses Claude to analyze each lead
+2. **Enrich** (`enrich.py`): Uses Gemini Flash to analyze each lead
    - Scrapes website content
    - Generates 2-3 sentence research summary
    - Extracts email from website if available
@@ -45,7 +45,7 @@ Required in `.env`:
 ```bash
 MASTER_DATABASE_URL=postgresql://ghost:***@<db>.ghost.build/postgres
 GOOGLE_MAPS_API_KEY=AIza...
-ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=AIza...  # FREE!
 ```
 
 ## Installation
@@ -131,8 +131,8 @@ CREATE TABLE leads (
 ## Cost Estimates
 
 - Google Maps API: $0.017 per lead (Text Search + Place Details)
-- Claude API: ~$0.001 per lead (300 tokens output)
-- Total: ~$0.018 per lead
+- Gemini API: FREE (generous quota)
+- Total: ~$0.017 per lead
 
 ## Testing
 

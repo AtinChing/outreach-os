@@ -1,7 +1,9 @@
 import os
 import asyncio
 from dotenv import load_dotenv
-from agents.research import search, enrich, writer
+import search
+import enrich
+import writer
 
 load_dotenv()
 
