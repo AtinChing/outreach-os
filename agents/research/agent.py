@@ -3,6 +3,7 @@ import asyncio
 from dotenv import load_dotenv
 from . import search, enrich, writer
 from db.client import get_master_pool
+from db.failure_detail import format_failure
 
 load_dotenv()
 
@@ -65,9 +66,9 @@ async def main(job_id: str, connection_string: str):
         print(f"\n📊 Updating job status...")
         async with pool.acquire() as conn:
             await conn.execute(
-                "UPDATE jobs SET status = $1 WHERE job_id = $2",
+                "UPDATE jobs SET status = $1, error_detail = NULL WHERE job_id = $2",
                 "RESEARCH_COMPLETE",
-                job_id
+                job_id,
             )
         print(f"✅ Updated job status to RESEARCH_COMPLETE")
         
@@ -85,12 +86,14 @@ async def main(job_id: str, connection_string: str):
         
         # Update job status to FAILED
         try:
+            detail = format_failure(e)
             pool = await get_master_pool()
             async with pool.acquire() as conn:
                 await conn.execute(
-                    "UPDATE jobs SET status = $1 WHERE job_id = $2",
+                    "UPDATE jobs SET status = $1, error_detail = $2 WHERE job_id = $3",
                     "FAILED",
-                    job_id
+                    detail,
+                    job_id,
                 )
             print(f"✅ Updated job status to FAILED")
         except Exception as status_error:

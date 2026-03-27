@@ -37,6 +37,7 @@ class JobStatusResponse(BaseModel):
     query: str
     status: str
     created_at: Optional[datetime] = None
+    error_detail: Optional[str] = None
 
 
 class LeadsResponse(BaseModel):

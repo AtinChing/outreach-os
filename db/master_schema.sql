@@ -6,6 +6,7 @@ CREATE TABLE jobs (
     query TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'INITIATED',
     db_connection_string TEXT,
+    error_detail TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 

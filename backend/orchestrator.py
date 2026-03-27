@@ -4,6 +4,7 @@ from pathlib import Path
 
 from agents.research import agent as research_agent
 from db.client import get_master_pool
+from db.failure_detail import format_failure
 
 
 async def trigger_research(job_id: str) -> None:
@@ -50,10 +51,12 @@ async def trigger_research(job_id: str) -> None:
         await research_agent.main(job_id, connection_string)
 
     except Exception as exc:
+        detail = format_failure(exc)
         pool = await get_master_pool()
         async with pool.acquire() as conn:
             await conn.execute(
-                "UPDATE jobs SET status='FAILED' WHERE job_id=$1",
+                "UPDATE jobs SET status='FAILED', error_detail=$2 WHERE job_id=$1",
                 job_id,
+                detail,
             )
         raise exc

@@ -36,6 +36,16 @@ async def create_job(
     return {"job_id": job_id, "status": row["status"], "created_at": row["created_at"]}
 
 
+@app.get("/jobs", response_model=list[models.JobStatusResponse])
+async def list_jobs(token: dict = Depends(verify_token)):
+    pool = await get_master_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT job_id, query, status, created_at, error_detail FROM jobs ORDER BY created_at DESC NULLS LAST"
+        )
+    return [models.JobStatusResponse(**dict(row)) for row in rows]
+
+
 @app.get("/jobs/{job_id}", response_model=models.JobStatusResponse)
 async def get_job(
     job_id: str,
@@ -44,7 +54,7 @@ async def get_job(
     pool = await get_master_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT job_id, query, status, created_at FROM jobs WHERE job_id = $1",
+            "SELECT job_id, query, status, created_at, error_detail FROM jobs WHERE job_id = $1",
             job_id,
         )
 
