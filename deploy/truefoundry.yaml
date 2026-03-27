@@ -1,0 +1,9 @@
+services:
+  backend:
+    # TODO: configure backend service
+    image: backend
+    port: 8000
+
+  research-agent:
+    # TODO: configure research agent service
+    image: research-agent
