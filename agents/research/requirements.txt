@@ -1,5 +1,5 @@
 httpx
-anthropic
+openai
 asyncpg
 python-dotenv
 beautifulsoup4

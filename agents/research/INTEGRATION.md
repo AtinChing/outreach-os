@@ -41,7 +41,7 @@ async def trigger_research_agent(job_id: str, query: str):
             "LEAD_COUNT": "10",
             "MASTER_DATABASE_URL": os.getenv("MASTER_DATABASE_URL"),
             "GOOGLE_MAPS_API_KEY": os.getenv("GOOGLE_MAPS_API_KEY"),
-            "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY"),
+            "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
         }
     )
     
@@ -105,11 +105,11 @@ env:
         name: api-keys
         key: google_maps
   
-  - name: ANTHROPIC_API_KEY
+  - name: OPENAI_API_KEY
     valueFrom:
       secretKeyRef:
         name: api-keys
-        key: anthropic
+        key: openai
 
 # These are set dynamically by Orchestrator
 # - JOB_ID
@@ -137,7 +137,7 @@ View live logs:
 🌍 Searching for 10 leads...
 ✅ Found 10 leads
 
-🧠 Enriching leads with Claude...
+🧠 Enriching leads with OpenAI...
   [1/10] Enriching ABC Plumbing...
   ...
 ```
@@ -286,4 +286,4 @@ After Research Agent completes:
 - TrueFoundry docs: https://docs.truefoundry.com
 - Ghost DB docs: https://ghost.build/docs
 - Google Maps API: https://developers.google.com/maps/documentation/places
-- Anthropic API: https://docs.anthropic.com
+- OpenAI API: https://platform.openai.com/docs

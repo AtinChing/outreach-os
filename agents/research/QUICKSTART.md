@@ -7,7 +7,7 @@ Get the Research Agent running in 5 minutes.
 1. Python 3.11+
 2. Ghost DB (or any PostgreSQL database)
 3. Google Maps API key
-4. Anthropic API key
+4. OpenAI API key
 
 ## Setup
 
@@ -28,7 +28,7 @@ MASTER_DATABASE_URL=postgresql://user:pass@host:5432/dbname
 
 # API Keys
 GOOGLE_MAPS_API_KEY=AIzaSy...
-ANTHROPIC_API_KEY=sk-ant-api03-...
+OPENAI_API_KEY=sk-...
 ```
 
 ### 3. Initialize Database
@@ -74,7 +74,7 @@ Expected output:
 🌍 Searching for 5 leads...
 ✅ Found 5 leads
 
-🧠 Enriching leads with Claude...
+🧠 Enriching leads with OpenAI...
   [1/5] Enriching Blue Bottle Coffee...
   [2/5] Enriching Sightglass Coffee...
   ...
@@ -133,13 +133,13 @@ ValueError: Google Maps API error: REQUEST_DENIED
 
 **Solution**: Enable Places API in Google Cloud Console and check API key permissions.
 
-### Claude API Error
+### OpenAI API Error
 
 ```
-anthropic.AuthenticationError: Invalid API key
+openai.AuthenticationError: Invalid API key
 ```
 
-**Solution**: Verify `ANTHROPIC_API_KEY` in `.env` starts with `sk-ant-api03-`.
+**Solution**: Verify `OPENAI_API_KEY` in `.env` starts with `sk-`.
 
 ### Database Connection Error
 
@@ -165,14 +165,12 @@ asyncpg.exceptions.InvalidCatalogNameError: database "postgres" does not exist
 
 ## API Reference
 
-### `run_research_agent()`
+### `main()`
 
 ```python
-async def run_research_agent(
+async def main(
     job_id: str,           # UUID of job from master DB
-    query: str,            # Natural language query
-    job_connection_string: str,  # PostgreSQL connection string
-    lead_count: int = 10   # Number of leads to find
+    connection_string: str # PostgreSQL connection string for job DB
 ) -> dict:
     """
     Returns:

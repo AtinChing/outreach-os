@@ -16,7 +16,7 @@ cp ../../.env.example ../../.env
 # Edit .env and add your API keys:
 # - MASTER_DATABASE_URL (PostgreSQL connection string)
 # - GOOGLE_MAPS_API_KEY (from Google Cloud Console)
-# - ANTHROPIC_API_KEY (from Anthropic Console)
+# - OPENAI_API_KEY (from OpenAI Platform)
 ```
 
 ### 3. Run Example
@@ -37,7 +37,7 @@ Expected output:
 🌍 Searching for 5 leads...
 ✅ Found 5 leads
 
-🧠 Enriching leads with Claude...
+🧠 Enriching leads with OpenAI...
   [1/5] Enriching Starbucks Reserve Roastery...
   [2/5] Enriching Victrola Coffee Roasters...
   [3/5] Enriching Espresso Vivace...
@@ -116,9 +116,9 @@ lead_count = 25
 → Add your Google Maps API key to `.env`
 → Enable Places API in Google Cloud Console
 
-### "ANTHROPIC_API_KEY not set"
-→ Add your Anthropic API key to `.env`
-→ Get key from https://console.anthropic.com
+### "OPENAI_API_KEY not set"
+→ Add your OpenAI API key to `.env`
+→ Get key from https://platform.openai.com
 
 ### "MASTER_DATABASE_URL not set"
 → Add your PostgreSQL connection string to `.env`
@@ -148,7 +148,7 @@ For each lead, the agent provides:
 
 Per lead:
 - Google Maps API: $0.017
-- Claude API: $0.001
+- OpenAI API: $0.001
 - **Total: ~$0.018 per lead**
 
 Examples:

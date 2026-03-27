@@ -8,12 +8,12 @@ The Research Agent is the first step in the lead generation pipeline. It discove
 ┌─────────────────────────────────────────────────────────────┐
 │                    RESEARCH AGENT                           │
 │                                                             │
-│  Input: job_id, query, job_connection_string               │
+│  Input: job_id, connection_string                          │
 │                                                             │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐ │
 │  │   search.py  │───▶│  enrich.py   │───▶│  writer.py   │ │
 │  │              │    │              │    │              │ │
-│  │ Google Maps  │    │   Claude     │    │  Ghost DB    │ │
+│  │ Google Maps  │    │   OpenAI     │    │  Ghost DB    │ │
 │  │ Places API   │    │   Analysis   │    │  (asyncpg)   │ │
 │  └──────────────┘    └──────────────┘    └──────────────┘ │
 │                                                             │
@@ -28,7 +28,7 @@ The Research Agent is the first step in the lead generation pipeline. It discove
    - Place Details API for phone, website, rating
    - Filters out permanently closed businesses
 
-2. **Enrich** (`enrich.py`): Uses Claude to analyze each lead
+2. **Enrich** (`enrich.py`): Uses OpenAI to analyze each lead
    - Scrapes website content
    - Generates 2-3 sentence research summary
    - Extracts email from website if available
@@ -45,7 +45,7 @@ Required in `.env`:
 ```bash
 MASTER_DATABASE_URL=postgresql://ghost:***@<db>.ghost.build/postgres
 GOOGLE_MAPS_API_KEY=AIza...
-ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
 ```
 
 ## Installation
@@ -62,13 +62,11 @@ pip install -r requirements.txt
 The Orchestrator will invoke this agent with:
 
 ```python
-from agents.research.agent import run_research_agent
+from agents.research import agent as research_agent
 
-result = await run_research_agent(
+result = await research_agent.main(
     job_id="123e4567-e89b-12d3-a456-426614174000",
-    query="plumbing leads in Austin TX",
-    job_connection_string="postgresql://ghost:***@job-db.ghost.build/postgres",
-    lead_count=10
+    connection_string="postgresql://ghost:***@job-db.ghost.build/postgres"
 )
 ```
 
@@ -77,9 +75,7 @@ result = await run_research_agent(
 ```bash
 python agent.py \
   "123e4567-e89b-12d3-a456-426614174000" \
-  "plumbing in Austin TX" \
-  "postgresql://ghost:***@job-db.ghost.build/postgres" \
-  10
+  "postgresql://ghost:***@job-db.ghost.build/postgres"
 ```
 
 ## Database Schema
@@ -116,14 +112,14 @@ CREATE TABLE leads (
 ## Error Handling
 
 - If Google Maps API fails: raises `ValueError`
-- If Claude API fails: raises exception, lead gets partial data
-- If DB write fails: raises exception, job status set to `RESEARCH_FAILED`
+- If OpenAI API fails: raises exception, lead gets partial data
+- If DB write fails: raises exception, job status set to `FAILED`
 - All errors propagate to Orchestrator for retry logic
 
 ## Performance
 
 - Google Maps API: ~500ms per lead (2 API calls each)
-- Claude enrichment: ~2-3s per lead
+- OpenAI enrichment: ~2-3s per lead
 - Website scraping: ~1-2s per lead
 - Total: ~4-6s per lead
 - 10 leads: ~40-60s end-to-end
@@ -131,7 +127,7 @@ CREATE TABLE leads (
 ## Cost Estimates
 
 - Google Maps API: $0.017 per lead (Text Search + Place Details)
-- Claude API: ~$0.001 per lead (300 tokens output)
+- OpenAI API: ~$0.001 per lead (300 tokens output)
 - Total: ~$0.018 per lead
 
 ## Testing

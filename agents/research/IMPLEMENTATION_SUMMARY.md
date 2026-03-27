@@ -2,7 +2,7 @@
 
 ## What Was Built
 
-A complete, production-ready Research Agent that discovers and enriches leads using Google Maps API and Claude AI, then persists them to Ghost DB (PostgreSQL).
+A complete, production-ready Research Agent that discovers and enriches leads using Google Maps API and OpenAI, then persists them to Ghost DB (PostgreSQL).
 
 ## Files Created/Modified
 
@@ -21,7 +21,7 @@ A complete, production-ready Research Agent that discovers and enriches leads us
 
 3. **`enrich.py`** - AI-powered lead enrichment
    - Website scraping with BeautifulSoup
-   - Claude API for business analysis
+   - OpenAI API for business analysis
    - Email extraction from website content
    - Generates 2-3 sentence research summaries
 
@@ -55,7 +55,7 @@ A complete, production-ready Research Agent that discovers and enriches leads us
 
 ### Dependencies
 12. **`requirements.txt`** - Updated with:
-   - `anthropic` - Claude API client
+   - `openai` - OpenAI API client
    - `beautifulsoup4` - Website scraping
    - `httpx` - Async HTTP client
    - `asyncpg` - PostgreSQL async driver
@@ -117,7 +117,7 @@ created_at TIMESTAMP
 
 ### 2. AI Enrichment
 - Website content extraction
-- Claude-powered business analysis
+- OpenAI-powered business analysis
 - Email extraction from websites
 - Business signals and pain point identification
 
@@ -144,7 +144,7 @@ created_at TIMESTAMP
 ### Timing (per lead)
 - Google Maps API: ~500ms (2 API calls)
 - Website scraping: ~1-2s
-- Claude enrichment: ~2-3s
+- OpenAI enrichment: ~2-3s
 - Database write: ~50ms
 - **Total: ~4-6s per lead**
 
@@ -154,7 +154,7 @@ created_at TIMESTAMP
 
 ### Cost (per lead)
 - Google Maps API: $0.017
-- Claude API: ~$0.001
+- OpenAI API: ~$0.001
 - **Total: ~$0.018 per lead**
 
 ## API Keys Required
@@ -164,8 +164,8 @@ created_at TIMESTAMP
    - Enable: Place Details API
    - Cost: $0.017 per lead
 
-2. **Anthropic API Key**
-   - Model: claude-3-5-sonnet-20241022
+2. **OpenAI API Key**
+   - Model: gpt-4o-mini
    - Cost: ~$0.001 per lead
 
 3. **Ghost DB Connection String**
@@ -185,7 +185,7 @@ python test_agent.py
 
 Expected output:
 - ✅ 5 leads discovered
-- ✅ 5 leads enriched with Claude
+- ✅ 5 leads enriched with OpenAI
 - ✅ 5 leads saved to Ghost DB
 - ✅ Job status updated to RESEARCH_COMPLETE
 
@@ -218,7 +218,7 @@ JOB_CONNECTION_STRING=<postgresql://...>
 LEAD_COUNT=10
 MASTER_DATABASE_URL=<postgresql://...>
 GOOGLE_MAPS_API_KEY=<key>
-ANTHROPIC_API_KEY=<key>
+OPENAI_API_KEY=<key>
 ```
 
 ## Integration Points
@@ -273,7 +273,7 @@ leads = await conn.fetch(
 
 1. **Functional**
    - Discovers leads via Google Maps API
-   - Enriches with Claude AI
+   - Enriches with OpenAI
    - Persists to Ghost DB
    - Updates job status
 
@@ -308,7 +308,7 @@ leads = await conn.fetch(
 The Research Agent is production-ready and fully implements the spec requirements:
 
 - ✅ Google Maps API integration via Airbyte pattern
-- ✅ Claude AI enrichment
+- ✅ OpenAI enrichment
 - ✅ Ghost DB (PostgreSQL) persistence
 - ✅ Job status tracking
 - ✅ Error handling and logging
