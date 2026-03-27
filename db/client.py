@@ -1,11 +1,15 @@
-import asyncpg
 import os
+import asyncpg
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
 
-async def get_master_pool():
-    return await asyncpg.create_pool(dsn=os.getenv("MASTER_DATABASE_URL"))
 
-async def get_job_pool(connection_string: str):
-    return await asyncpg.create_pool(dsn=connection_string)
+async def get_master_pool() -> asyncpg.Pool:
+    url = os.getenv("MASTER_DATABASE_URL")
+    return await asyncpg.create_pool(url)
+
+
+async def get_job_pool(connection_string: str) -> asyncpg.Pool:
+    return await asyncpg.create_pool(connection_string)

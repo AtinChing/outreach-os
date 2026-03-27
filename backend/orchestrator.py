@@ -1,42 +1,59 @@
-import asyncio
-import subprocess
 import json
-from db.client import get_master_pool
+import subprocess
+from pathlib import Path
+
 from agents.research import agent as research_agent
+from db.client import get_master_pool
 
-async def trigger_research(job_id: str):
-    # Step 1: Create a new Ghost DB for this job
-    result = subprocess.run(
-        ["ghost", "create", "--name", f"job-{job_id}", "--json", "--wait"],
-        capture_output=True,
-        text=True
-    )
-    ghost_output = json.loads(result.stdout)
 
-    # Step 2: Get the connection string for the new DB
-    connect_result = subprocess.run(
-        ["ghost", "connect", ghost_output["id"]],
-        capture_output=True,
-        text=True
-    )
-    connection_string = connect_result.stdout.strip()
+async def trigger_research(job_id: str) -> None:
+    try:
+        # 1. Create a new Ghost DB for this job
+        short_id = str(job_id)[:8]
+        result = subprocess.run(
+            ["ghost", "create", "--name", f"job-{short_id}", "--json", "--wait"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        db_id = json.loads(result.stdout)["id"]
 
-    # Step 3: Initialize the leads table on the new per-job DB
-    subprocess.run(
-        ["ghost", "sql", ghost_output["id"]],
-        input=open("db/job_schema.sql").read(),
-        capture_output=True,
-        text=True
-    )
+        # 2. Get the connection string
+        result = subprocess.run(
+            ["ghost", "connect", db_id],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        connection_string = result.stdout.strip()
 
-    # Step 4: Store connection string back into master jobs table
-    pool = await get_master_pool()
-    async with pool.acquire() as conn:
-        await conn.execute(
-            "UPDATE jobs SET db_connection_string=$1 WHERE job_id=$2",
-            connection_string,
-            job_id
+        # 3. Initialize the leads table
+        sql = Path("db/job_schema.sql").read_text()
+        subprocess.run(
+            ["ghost", "sql", db_id],
+            input=sql,
+            capture_output=True,
+            text=True,
+            check=True,
         )
 
-    # Step 5: Kick off research agent with job_id + connection string
-    await research_agent.main(job_id, connection_string)
+        # 4. Store the connection string in the master DB
+        pool = await get_master_pool()
+        async with pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE jobs SET db_connection_string=$1 WHERE job_id=$2",
+                connection_string,
+                job_id,
+            )
+
+        # 5. Hand off to the research agent
+        await research_agent.main(job_id, connection_string)
+
+    except Exception as exc:
+        pool = await get_master_pool()
+        async with pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE jobs SET status='FAILED' WHERE job_id=$1",
+                job_id,
+            )
+        raise exc

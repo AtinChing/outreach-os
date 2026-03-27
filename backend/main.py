@@ -1,11 +1,54 @@
-from fastapi import FastAPI
+import asyncio
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
+from backend.auth import verify_token
+from db.client import get_master_pool
+from db import models
+from backend import orchestrator
 
 app = FastAPI()
 
-@app.post("/jobs")
-async def create_job():
-    return {"status": "TODO"}
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
 
-@app.get("/jobs/{job_id}")
-async def get_job(job_id: str):
-    return {"status": "TODO"}
+
+@app.post("/jobs")
+async def create_job(
+    body: models.JobCreateRequest,
+    token: dict = Depends(verify_token),
+):
+    pool = await get_master_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO jobs (query) VALUES ($1) RETURNING job_id, status, created_at",
+            body.query,
+        )
+
+    job_id = row["job_id"]
+    asyncio.create_task(orchestrator.trigger_research(job_id))
+
+    return {"job_id": job_id, "status": row["status"], "created_at": row["created_at"]}
+
+
+@app.get("/jobs/{job_id}", response_model=models.JobStatusResponse)
+async def get_job(
+    job_id: str,
+    token: dict = Depends(verify_token),
+):
+    pool = await get_master_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT job_id, query, status, created_at FROM jobs WHERE job_id = $1",
+            job_id,
+        )
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    return models.JobStatusResponse(**dict(row))
