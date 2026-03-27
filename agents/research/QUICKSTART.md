@@ -6,8 +6,8 @@ Get the Research Agent running in 5 minutes.
 
 1. Python 3.11+
 2. Ghost DB (or any PostgreSQL database)
-3. Google Maps API key
-4. Anthropic API key
+3. HasData API key
+4. OpenAI API key
 
 ## Setup
 
@@ -27,8 +27,8 @@ Create `.env` in project root:
 MASTER_DATABASE_URL=postgresql://user:pass@host:5432/dbname
 
 # API Keys
-GOOGLE_MAPS_API_KEY=AIzaSy...
-GEMINI_API_KEY=AIzaSy...  # Free tier available!
+HASDATA_API_KEY=...
+OPENAI_API_KEY=sk-...
 ```
 
 ### 3. Initialize Database
@@ -71,14 +71,14 @@ Expected output:
 🔍 Research Agent started for job 123e4567-e89b-12d3-a456-426614174000
 📝 Query: coffee shops in San Francisco CA
 
-🌍 Searching for 5 leads...
-✅ Found 5 leads
+🌍 Searching for 10 leads...
+✅ Found 10 leads
 
-🧠 Enriching leads with Claude...
-  [1/5] Enriching Blue Bottle Coffee...
-  [2/5] Enriching Sightglass Coffee...
+🧠 Enriching leads with OpenAI...
+  [1/10] Enriching Blue Bottle Coffee...
+  [2/10] Enriching Sightglass Coffee...
   ...
-✅ Enriched 5 leads
+✅ Enriched 10 leads
 
 💾 Saving leads to Ghost DB...
 ✅ Saved 5 leads to job DB
@@ -87,14 +87,14 @@ Expected output:
 ✅ Updated job 123e4567-e89b-12d3-a456-426614174000 status to RESEARCH_COMPLETE
 
 ✅ Research Agent completed successfully!
-📈 Summary: 5 leads researched and saved
+📈 Summary: 10 leads researched and saved
 ============================================================
 
-   ✅ Agent completed: {'status': 'success', 'leads_count': 5, 'job_id': '...'}
+   ✅ Agent completed: {'status': 'success', 'leads_count': 10, 'job_id': '...'}
 
 4️⃣ Verifying results...
    Job status: RESEARCH_COMPLETE
-   Leads saved: 5
+   Leads saved: 10
 
    📄 Sample Lead:
       Name: Blue Bottle Coffee
@@ -115,42 +115,37 @@ Expected output:
 
 ## Manual Run
 
+The job must already exist in the master DB with `query` set (see `example.py` or `test_agent.py`). Then:
+
 ```bash
 python agent.py \
-  "$(uuidgen)" \
-  "plumbing in Austin TX" \
-  "$MASTER_DATABASE_URL" \
-  10
+  "<job-uuid-from-jobs-table>" \
+  "$MASTER_DATABASE_URL"
 ```
 
 ## Troubleshooting
 
-### Google Maps API Error
+### HasData API Error
 
 ```
-ValueError: Google Maps API error: REQUEST_DENIED
+ValueError: HASDATA_API_KEY not set
 ```
 
-**Solution**: Enable Places API in Google Cloud Console and check API key permissions.
-
-### Claude API Error
+or
 
 ```
-anthropic.AuthenticationError: Invalid API key
+ValueError: HasData API error: ...
 ```
 
-**Solution**: Verify `ANTHROPIC_API_KEY` in `.env` starts with `sk-ant-api03-`.
+**Solution**: Set `HASDATA_API_KEY` in `.env` and confirm your HasData account and quota.
 
-### Gemini API Error
+### OpenAI API Error
 
 ```
-google.api_core.exceptions.PermissionDenied: API key not valid
+openai.AuthenticationError: Invalid API key
 ```
 
-**Solution**: 
-- Verify `GEMINI_API_KEY` in `.env` starts with `AIza`
-- Enable Generative Language API in Google Cloud Console
-- See `GEMINI_SETUP.md` for detailed setup
+**Solution**: Verify `OPENAI_API_KEY` in `.env` starts with `sk-`.
 
 ### Database Connection Error
 
@@ -176,14 +171,12 @@ asyncpg.exceptions.InvalidCatalogNameError: database "postgres" does not exist
 
 ## API Reference
 
-### `run_research_agent()`
+### `main()`
 
 ```python
-async def run_research_agent(
+async def main(
     job_id: str,           # UUID of job from master DB
-    query: str,            # Natural language query
-    job_connection_string: str,  # PostgreSQL connection string
-    lead_count: int = 10   # Number of leads to find
+    connection_string: str # PostgreSQL connection string for job DB
 ) -> dict:
     """
     Returns:

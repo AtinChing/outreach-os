@@ -1,45 +1,56 @@
 import os
 import asyncio
 from dotenv import load_dotenv
-import search
-import enrich
-import writer
+from . import search, enrich, writer
+from db.client import get_master_pool
+from db.failure_detail import format_failure
 
 load_dotenv()
 
-async def run_research_agent(
-    job_id: str, 
-    query: str, 
-    job_connection_string: str,
-    lead_count: int = 10
-):
+
+async def main(job_id: str, connection_string: str):
     """
     Research Agent main entry point.
     
+    This is the canonical function called by the orchestrator.
+    
     Flow:
-    1. Receives job_id + query from Orchestrator
+    1. Reads job query from master DB using job_id
     2. Calls Google Maps API via search.py to find leads
-    3. Enriches each lead with Claude via enrich.py
+    3. Enriches each lead with OpenAI via enrich.py
     4. Saves leads to job-specific Ghost DB via writer.py
     5. Updates master job status to RESEARCH_COMPLETE
     
     Args:
         job_id: UUID of the job from master DB
-        query: Natural language query (e.g., "10 plumbing leads in Austin TX")
-        job_connection_string: PostgreSQL connection string for job-specific DB
-        lead_count: Number of leads to find (default 10)
+        connection_string: PostgreSQL connection string for job-specific DB
     """
     print(f"🔍 Research Agent started for job {job_id}")
-    print(f"📝 Query: {query}")
     
     try:
-        # Step 1: Find leads via Google Maps API
+        # Step 1: Read query from master DB
+        print(f"\n📋 Reading job details from master DB...")
+        pool = await get_master_pool()
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT query FROM jobs WHERE job_id = $1",
+                job_id
+            )
+        
+        if not row:
+            raise ValueError(f"Job {job_id} not found in master DB")
+        
+        query = row['query']
+        print(f"📝 Query: {query}")
+        
+        # Step 2: Find leads via Google Maps API
+        lead_count = 10  # Default lead count
         print(f"\n🌍 Searching for {lead_count} leads...")
         leads = await search.find_leads(query, count=lead_count)
         print(f"✅ Found {len(leads)} leads")
         
-        # Step 2: Enrich each lead with Claude
-        print(f"\n🧠 Enriching leads with Claude...")
+        # Step 3: Enrich each lead with OpenAI
+        print(f"\n🧠 Enriching leads with OpenAI...")
         enriched_leads = []
         for i, lead in enumerate(leads, 1):
             print(f"  [{i}/{len(leads)}] Enriching {lead.get('name')}...")
@@ -47,21 +58,25 @@ async def run_research_agent(
             enriched_leads.append(enriched)
         print(f"✅ Enriched {len(enriched_leads)} leads")
         
-        # Step 3: Save to job-specific Ghost DB
+        # Step 4: Save to job-specific Ghost DB
         print(f"\n💾 Saving leads to Ghost DB...")
-        await writer.save_leads(job_id, enriched_leads, job_connection_string)
+        await writer.save_leads(job_id, enriched_leads, connection_string)
         
-        # Step 4: Update master job status
+        # Step 5: Update master job status to RESEARCH_COMPLETE
         print(f"\n📊 Updating job status...")
-        master_connection_string = os.getenv("MASTER_DATABASE_URL")
-        if not master_connection_string:
-            raise ValueError("MASTER_DATABASE_URL not set")
-        
-        await writer.update_job_status(
-            job_id, 
-            "RESEARCH_COMPLETE", 
-            master_connection_string
-        )
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """
+                UPDATE jobs
+                SET status = $1,
+                    error_detail = NULL,
+                    research_completed_at = NOW()
+                WHERE job_id = $2
+                """,
+                "RESEARCH_COMPLETE",
+                job_id,
+            )
+        print(f"✅ Updated job status to RESEARCH_COMPLETE")
         
         print(f"\n✅ Research Agent completed successfully!")
         print(f"📈 Summary: {len(enriched_leads)} leads researched and saved")
@@ -75,17 +90,20 @@ async def run_research_agent(
     except Exception as e:
         print(f"\n❌ Research Agent failed: {str(e)}")
         
-        # Update job status to failed
+        # Update job status to FAILED
         try:
-            master_connection_string = os.getenv("MASTER_DATABASE_URL")
-            if master_connection_string:
-                await writer.update_job_status(
-                    job_id, 
-                    "RESEARCH_FAILED", 
-                    master_connection_string
+            detail = format_failure(e)
+            pool = await get_master_pool()
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    "UPDATE jobs SET status = $1, error_detail = $2 WHERE job_id = $3",
+                    "FAILED",
+                    detail,
+                    job_id,
                 )
-        except:
-            pass
+            print(f"✅ Updated job status to FAILED")
+        except Exception as status_error:
+            print(f"⚠️  Failed to update job status: {str(status_error)}")
         
         raise
 
@@ -94,14 +112,12 @@ async def run_research_agent(
 if __name__ == "__main__":
     import sys
     
-    if len(sys.argv) < 4:
-        print("Usage: python agent.py <job_id> <query> <job_connection_string> [lead_count]")
-        print('Example: python agent.py "123e4567-e89b-12d3-a456-426614174000" "plumbing in Austin TX" "postgresql://..." 10')
+    if len(sys.argv) < 3:
+        print("Usage: python agent.py <job_id> <job_connection_string>")
+        print('Example: python agent.py "123e4567-e89b-12d3-a456-426614174000" "postgresql://..."')
         sys.exit(1)
     
     job_id = sys.argv[1]
-    query = sys.argv[2]
-    job_connection_string = sys.argv[3]
-    lead_count = int(sys.argv[4]) if len(sys.argv) > 4 else 10
+    job_connection_string = sys.argv[2]
     
-    asyncio.run(run_research_agent(job_id, query, job_connection_string, lead_count))
+    asyncio.run(main(job_id, job_connection_string))

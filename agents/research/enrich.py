@@ -1,12 +1,13 @@
 import os
 import httpx
-from google import genai
+from openai import AsyncOpenAI
 from typing import Dict, Optional
 from bs4 import BeautifulSoup
 
+
 async def enrich_lead(lead: Dict) -> Dict:
     """
-    Enriches a lead with Claude by:
+    Enriches a lead with OpenAI by:
     1. Scraping their website (if available)
     2. Generating a research summary with business signals
     3. Attempting to extract email from website
@@ -26,12 +27,12 @@ async def enrich_lead(lead: Dict) -> Dict:
     # Scrape website content
     website_text = await scrape_website(website)
     
-    # Use Gemini Flash to analyze and summarize
-    gemini_api_key = os.getenv("GEMINI_API_KEY")
-    if not gemini_api_key:
-        raise ValueError("GEMINI_API_KEY not set")
+    # Use OpenAI to analyze and summarize
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        raise ValueError("OPENAI_API_KEY not set")
     
-    client = genai.Client(api_key=gemini_api_key)
+    client = AsyncOpenAI(api_key=openai_api_key)
     
     prompt = f"""Analyze this business website and provide a concise research summary (2-3 sentences max).
 
@@ -50,11 +51,13 @@ Focus on:
 
 Keep it brief and actionable."""
 
-    response = client.models.generate_content(
-        model='gemini-3-flash-preview',
-        contents=prompt
+    response = await client.chat.completions.create(
+        model="gpt-4o-mini",
+        max_tokens=300,
+        messages=[{"role": "user", "content": prompt}]
     )
-    research_summary = response.text
+    
+    research_summary = response.choices[0].message.content
     lead["research_summary"] = research_summary
     
     # Try to extract email from website text

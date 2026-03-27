@@ -8,9 +8,9 @@
   - [x] Filter closed businesses
   - [x] Return structured lead data
 
-- [x] Claude AI enrichment
+- [x] OpenAI enrichment
   - [x] Website scraping with BeautifulSoup
-  - [x] Claude API integration
+  - [x] OpenAI API integration
   - [x] Business analysis and summarization
   - [x] Email extraction from websites
 
@@ -89,7 +89,7 @@
 ## ✅ Dependencies
 
 - [x] requirements.txt updated
-  - [x] anthropic - Claude API
+  - [x] openai - OpenAI API
   - [x] beautifulsoup4 - Web scraping
   - [x] httpx - HTTP client
   - [x] asyncpg - PostgreSQL
@@ -100,7 +100,7 @@
 - [x] Environment variables
   - [x] MASTER_DATABASE_URL
   - [x] GOOGLE_MAPS_API_KEY
-  - [x] ANTHROPIC_API_KEY
+  - [x] OPENAI_API_KEY
   - [x] JOB_ID (runtime)
   - [x] QUERY (runtime)
   - [x] JOB_CONNECTION_STRING (runtime)
@@ -143,7 +143,7 @@
 
 - [x] Cost estimates
   - [x] Google Maps API cost calculated
-  - [x] Claude API cost calculated
+  - [x] OpenAI API cost calculated
   - [x] Total per-lead cost documented
 
 ## ✅ Security
@@ -187,7 +187,7 @@
 ### Performance Stats
 - **Time per lead**: 4-6 seconds
 - **Cost per lead**: $0.018
-- **API calls per lead**: 3 (2x Google Maps, 1x Claude)
+- **API calls per lead**: 3 (2x Google Maps, 1x OpenAI)
 
 ## ✅ Acceptance Criteria
 
@@ -197,7 +197,7 @@ All acceptance criteria from the spec have been met:
    - Text search + Place Details
    - Returns name, phone, address, website, rating
 
-2. ✅ **Enriches leads with Claude**
+2. ✅ **Enriches leads with OpenAI**
    - Scrapes website content
    - Generates research summary
    - Extracts email addresses

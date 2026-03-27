@@ -4,3 +4,6 @@ asyncpg
 pydantic
 python-dotenv
 openai
+python-jose[cryptography]
+httpx
+mcp>=1.0.0

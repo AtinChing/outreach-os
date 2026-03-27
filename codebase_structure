@@ -1,0 +1,37 @@
+research-to-outreach/               — monorepo root
+├── frontend/                       — React + Vite + TypeScript web UI
+│   └── src/
+│       ├── App.tsx                 — root component, sets up routing and Auth0 provider
+│       ├── pages/
+│       │   ├── Dashboard.tsx       — query input form, submits job, redirects to JobStatus
+│       │   └── JobStatus.tsx       — polls GET /jobs/:id, shows status + leads when done
+│       ├── components/
+│       │   ├── LeadsTable.tsx      — renders the leads array returned by the job status poll
+│       │   └── JobCard.tsx         — single job summary card (id, query, status, timestamp)
+│       └── api/
+│           └── client.ts           — all fetch calls to the backend (submitJob, getJob)
+├── backend/                        — FastAPI app, the API layer between frontend and agents
+│   ├── main.py                     — route definitions: POST /jobs and GET /jobs/{job_id}
+│   ├── auth.py                     — Auth0 JWT validation, used as a FastAPI dependency
+│   ├── orchestrator.py             — creates per-job Ghost DB, runs schema, calls research agent
+│   └── requirements.txt            — fastapi, uvicorn, asyncpg, pydantic, python-dotenv, httpx, python-jose, openai
+├── agents/
+│   └── research/                   — your friend's territory, runs after orchestrator hands off
+│       ├── agent.py                — entrypoint: receives job_id + connection_string, sequences the steps
+│       ├── search.py               — calls Airbyte → Google Maps Places API, returns raw leads list
+│       ├── enrich.py               — takes a raw lead, visits website, calls OpenAI, returns enriched lead
+│       ├── writer.py               — takes enriched leads, writes them into the per-job Ghost DB
+│       └── requirements.txt        — httpx, openai, asyncpg, python-dotenv
+├── db/                             — shared data layer, imported by both backend and agents
+│   ├── master_schema.sql           — CREATE TABLE jobs (run once against master Ghost DB)
+│   ├── job_schema.sql              — CREATE TABLE leads (run per-job by orchestrator)
+│   ├── models.py                   — Pydantic models: Job, Lead, JobCreateRequest, JobStatusResponse
+│   └── client.py                   — get_master_pool() and get_job_pool(connection_string)
+├── deploy/                         — deployment configs, not needed until TrueFoundry integration
+│   ├── Dockerfile.backend          — Python 3.11, installs backend/requirements.txt, runs uvicorn
+│   ├── Dockerfile.research         — Python 3.11, installs agents/research/requirements.txt
+│   └── truefoundry.yaml            — stub service configs for backend and research-agent
+├── .env                            — your actual secrets, never committed
+├── .env.example                    — template: MASTER_DATABASE_URL, OPENAI_API_KEY, AUTH0_DOMAIN, AUTH0_AUDIENCE, AIRBYTE_API_KEY, GOOGLE_MAPS_API_KEY
+├── docker-compose.yml              — runs backend + research-agent together, injects env vars
+└── README.md                       — setup instructions

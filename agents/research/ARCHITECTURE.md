@@ -12,15 +12,12 @@
 │  │                    SEARCH PHASE                          │  │
 │  │                                                          │  │
 │  │  ┌────────────────────────────────────────────────┐     │  │
-│  │  │  Google Maps Places API                        │     │  │
-│  │  │  - Text Search: "plumbing in Austin TX"        │     │  │
-│  │  │  - Returns: place_id, name, rating             │     │  │
-│  │  └────────────────────────────────────────────────┘     │  │
-│  │                        ↓                                 │  │
-│  │  ┌────────────────────────────────────────────────┐     │  │
-│  │  │  Google Maps Place Details API                 │     │  │
-│  │  │  - Input: place_id                             │     │  │
-│  │  │  - Returns: phone, address, website            │     │  │
+│  │  │  HasData API (Google Maps search scrape)       │     │  │
+│  │  │  - GET /scrape/google-maps/search?q=...        │     │  │
+│  │  │  - Header: x-api-key (HASDATA_API_KEY)         │     │  │
+│  │  │  - Returns: businesses with name, phone,       │     │  │
+│  │  │    address, website, rating                    │     │  │
+│  │  │  - Skips permanently/temporarily closed        │     │  │
 │  │  └────────────────────────────────────────────────┘     │  │
 │  │                        ↓                                 │  │
 │  │  Result: List[{name, phone, address, website, rating}]  │  │
@@ -38,12 +35,11 @@
 │  │  └────────────────────────────────────────────────┘     │  │
 │  │                        ↓                                 │  │
 │  │  ┌────────────────────────────────────────────────┐     │  │
-│  │  │  Gemini API (Google)                       │     │  │
-│  │  │  - Model: gemini-1.5-flash                 │     │  │
-│  │  │  - Input: business info + website text     │     │  │
-│  │  │  - Output: 2-3 sentence summary            │     │  │
-│  │  │  - Focus: services, signals, pain points   │     │  │
-│  │  │  - Cost: FREE                              │     │  │
+│  │  │  OpenAI API                                    │     │  │
+│  │  │  - Model: gpt-4o-mini                          │     │  │
+│  │  │  - Input: business info + website text         │     │  │
+│  │  │  - Output: 2-3 sentence summary                │     │  │
+│  │  │  - Focus: services, signals, pain points       │     │  │
 │  │  └────────────────────────────────────────────────┘     │  │
 │  │                        ↓                                 │  │
 │  │  ┌────────────────────────────────────────────────┐     │  │
@@ -154,7 +150,7 @@ job_id                               | status             | created_at
 
 ### `enrich.py` - AI Enhancement
 - Website content scraping
-- Claude API integration
+- OpenAI API integration
 - Business analysis
 - Email extraction
 - Summary generation
@@ -182,7 +178,7 @@ job_id                               | status             | created_at
 │  ├─ 404/500 → Use placeholder text                          │
 │  └─ Invalid HTML → Use placeholder text                     │
 │                                                             │
-│  Claude API Failure                                         │
+│  OpenAI API Failure                                         │
 │  ├─ Rate limit → Retry with backoff                         │
 │  ├─ Invalid API key → Raise exception                       │
 │  └─ Timeout → Retry once                                    │
@@ -235,7 +231,7 @@ Total: ~10s for 10 leads (4.5x speedup)
 │  ┌───────────────────────────────────────────────────────┐ │
 │  │  Container: research-agent:latest                     │ │
 │  │  ├─ Python 3.11                                       │ │
-│  │  ├─ Dependencies (httpx, anthropic, asyncpg, etc.)    │ │
+│  │  ├─ Dependencies (httpx, openai, asyncpg, etc.)      │ │
 │  │  └─ Entrypoint: python entrypoint.py                  │ │
 │  └───────────────────────────────────────────────────────┘ │
 │                           ↓                                 │
@@ -253,7 +249,7 @@ Total: ~10s for 10 leads (4.5x speedup)
 │  ┌───────────────────────────────────────────────────────┐ │
 │  │  External Services                                    │ │
 │  │  ├─ Google Maps API (places.googleapis.com)           │ │
-│  │  ├─ Anthropic API (api.anthropic.com)                 │ │
+│  │  ├─ OpenAI API (api.openai.com)                       │ │
 │  │  ├─ Master Ghost DB (master-db.ghost.build)           │ │
 │  │  └─ Job Ghost DB (job-{id}.ghost.build)               │ │
 │  └───────────────────────────────────────────────────────┘ │
@@ -284,7 +280,7 @@ Total: ~10s for 10 leads (4.5x speedup)
 │                           ↓                                 │
 │  3. Research Agent ← YOU ARE HERE                           │
 │     ├─ Searches Google Maps                                │
-│     ├─ Enriches with Claude                                │
+│     ├─ Enriches with OpenAI                                │
 │     ├─ Saves to job DB                                     │
 │     └─ Updates status: RESEARCH_COMPLETE                   │
 │                           ↓                                 │
@@ -365,7 +361,7 @@ CREATE INDEX idx_leads_status ON leads(status);
 🌍 Searching for 10 leads...
 ✅ Found 10 leads
 
-🧠 Enriching leads with Claude...
+🧠 Enriching leads with OpenAI...
   [1/10] Enriching ABC Plumbing...
   [2/10] Enriching XYZ Plumbing...
   ...
@@ -413,6 +409,6 @@ CREATE INDEX idx_leads_status ON leads(status);
 5. **Queue-based**: Process leads asynchronously
 
 ### Cost at Scale
-- 1,000 leads/day: ~$17/day (FREE AI!)
-- 10,000 leads/day: ~$170/day (FREE AI!)
-- 100,000 leads/day: ~$1,700/day (FREE AI!)
+- 1,000 leads/day: ~$18/day
+- 10,000 leads/day: ~$180/day
+- 100,000 leads/day: ~$1,800/day

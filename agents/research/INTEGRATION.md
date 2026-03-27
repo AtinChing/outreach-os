@@ -40,8 +40,8 @@ async def trigger_research_agent(job_id: str, query: str):
             "JOB_CONNECTION_STRING": job_db_connection_string,
             "LEAD_COUNT": "10",
             "MASTER_DATABASE_URL": os.getenv("MASTER_DATABASE_URL"),
-            "GOOGLE_MAPS_API_KEY": os.getenv("GOOGLE_MAPS_API_KEY"),
-            "GEMINI_API_KEY": os.getenv("GEMINI_API_KEY"),
+            "HASDATA_API_KEY": os.getenv("HASDATA_API_KEY"),
+            "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
         }
     )
     
@@ -99,17 +99,17 @@ env:
         name: ghost-credentials
         key: master_db_url
   
-  - name: GOOGLE_MAPS_API_KEY
+  - name: HASDATA_API_KEY
     valueFrom:
       secretKeyRef:
         name: api-keys
-        key: google_maps
+        key: hasdata
   
-  - name: GEMINI_API_KEY
+  - name: OPENAI_API_KEY
     valueFrom:
       secretKeyRef:
         name: api-keys
-        key: gemini
+        key: openai
 
 # These are set dynamically by Orchestrator
 # - JOB_ID
@@ -137,7 +137,7 @@ View live logs:
 🌍 Searching for 10 leads...
 ✅ Found 10 leads
 
-🧠 Enriching leads with Claude...
+🧠 Enriching leads with OpenAI...
   [1/10] Enriching ABC Plumbing...
   ...
 ```
@@ -255,20 +255,7 @@ This reduces 10-lead processing from ~60s to ~15s.
 
 ### Rate Limiting
 
-Google Maps API has rate limits. Add throttling:
-
-```python
-# In search.py
-import asyncio
-
-async def find_leads_with_throttle(query: str, count: int = 10):
-    leads = []
-    for i in range(0, count, 5):  # Process 5 at a time
-        batch = await find_leads_batch(query, start=i, count=5)
-        leads.extend(batch)
-        await asyncio.sleep(1)  # 1s between batches
-    return leads
-```
+HasData and OpenAI may enforce rate limits. Add throttling or backoff around `search.find_leads` and `enrich.enrich_lead` if you hit quotas.
 
 ## Next Steps
 
@@ -285,5 +272,5 @@ After Research Agent completes:
 
 - TrueFoundry docs: https://docs.truefoundry.com
 - Ghost DB docs: https://ghost.build/docs
-- Google Maps API: https://developers.google.com/maps/documentation/places
-- Gemini API: https://ai.google.dev/gemini-api/docs
+- HasData: https://hasdata.com (API docs for Google Maps scrape endpoints)
+- OpenAI API: https://platform.openai.com/docs
