@@ -1,3 +1,4 @@
+import os
 import time
 from pathlib import Path
 
@@ -12,6 +13,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 JOB_SCHEMA_SQL = (REPO_ROOT / "db" / "job_schema.sql").read_text()
 
 
+def _research_use_master_database() -> bool:
+    return os.getenv("RESEARCH_USE_MASTER_DATABASE", "").lower() in ("1", "true", "yes")
+
+
 async def _apply_job_schema(connection_string: str) -> None:
     conn = await asyncpg.connect(connection_string)
     try:
@@ -22,6 +27,30 @@ async def _apply_job_schema(connection_string: str) -> None:
 
 async def trigger_research(job_id: str) -> None:
     try:
+        if _research_use_master_database():
+            master_url = os.getenv("MASTER_DATABASE_URL")
+            if not master_url:
+                raise ValueError("MASTER_DATABASE_URL not set (required for RESEARCH_USE_MASTER_DATABASE)")
+
+            await _apply_job_schema(master_url)
+
+            pool = await get_master_pool()
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    """
+                    UPDATE jobs
+                    SET db_connection_string = $1,
+                        ghost_db_id = NULL,
+                        provisioning_ms = 0
+                    WHERE job_id = $2
+                    """,
+                    master_url,
+                    job_id,
+                )
+
+            await research_agent.main(job_id, master_url)
+            return
+
         short_id = str(job_id)[:8]
         t0 = time.perf_counter()
         created = await ghost_create_database(name=f"job-{short_id}", wait=True)

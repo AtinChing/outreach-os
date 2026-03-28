@@ -1,11 +1,15 @@
 import os
 import asyncio
+from pathlib import Path
+
 from dotenv import load_dotenv
+
 from . import search, enrich, writer
 from db.client import get_master_pool
 from db.failure_detail import format_failure
 
-load_dotenv()
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+load_dotenv(_REPO_ROOT / ".env")
 
 
 async def main(job_id: str, connection_string: str):

@@ -25,6 +25,8 @@ services:
     env_file: .env
     environment:
       - MASTER_DATABASE_URL=${MASTER_DATABASE_URL}
+      # Local stack has no Ghost MCP; research writes leads into the same Postgres as jobs.
+      - RESEARCH_USE_MASTER_DATABASE=1
     ports:
       - "8000:8000"
     depends_on:
